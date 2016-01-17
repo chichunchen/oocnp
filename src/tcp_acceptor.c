@@ -137,7 +137,6 @@ void TCPAcceptor_epoll_loop(void *self, void (*welcome)(void*), void (*handle)(v
         int n, i;
 
         n = epoll_wait(efd, events, MAX_CONN_NUM, -1);
-        log_info("n=%d", n);
         for (i = 0; i < n; i++) {
 
             if ((events[i].events & EPOLLERR) ||
@@ -160,7 +159,8 @@ void TCPAcceptor_epoll_loop(void *self, void (*welcome)(void*), void (*handle)(v
                     struct sockaddr in_addr;
                     socklen_t in_len;
                     int infd;
-                    char hbuf[1024], sbuf[20];
+                    char hbuf[102]; //bug disappear
+                    TCPStream *tcp_stream;
 
                     in_len = sizeof in_addr;
                     infd = accept(tcp_acceptor->listenfd, &in_addr, &in_len);
@@ -178,14 +178,7 @@ void TCPAcceptor_epoll_loop(void *self, void (*welcome)(void*), void (*handle)(v
                         }
                     }
 
-                    s = getnameinfo(&in_addr, in_len,
-                            hbuf, sizeof hbuf,
-                            sbuf, sizeof sbuf,
-                            NI_NUMERICHOST | NI_NUMERICSERV);
-                    if (s == 0) {
-                        log_info("Accepted connection on descriptor %d "
-                               "(host=%s, port=%s)\n", infd, hbuf, sbuf);
-                    }
+                    TCPStream_init(tcp_stream, infd, in_addr);
 
                     /* Make the incoming socket non-blocking and add it to
                      * list of fds to monitor. */

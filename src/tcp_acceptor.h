@@ -4,6 +4,7 @@
 #include <string.h>
 #include "unp.h"
 #include "object.h"
+#include "tcp_stream.h"
 
 #define MAX_CONN_NUM    500000
 
