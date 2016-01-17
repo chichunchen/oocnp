@@ -17,10 +17,11 @@ typedef struct TCPAcceptor {
     char    *port;
 
     /* functions */
-    //
+    int (*listen)(void *self);
+    void (*epoll_loop)(void *self, void (*cb1)(void), void (*cb2)(void));
+    void (*close)(void *self);
 } TCPAcceptor;
 
 Object TCPAcceptorProto;
-int TCPAcceptor_listen();
 
 #endif
