@@ -77,18 +77,18 @@ int create_and_bind(char *port)
     return sfd;
 }
 
-int make_socket_non_blocking(int sockfd)
+int make_socket_non_blocking(int listenfd)
 {
     int flags, s;
 
-    flags = fcntl(sockfd, F_GETFL, 0);
+    flags = fcntl(listenfd, F_GETFL, 0);
     if (flags == -1) {
         perror("fcntl get");
         return -1;
     }
 
     flags |= O_NONBLOCK;
-    s = fcntl(sockfd, F_SETFL, flags);
+    s = fcntl(listenfd, F_SETFL, flags);
     if (s == -1) {
         perror("fcntl set");
         return -1;
@@ -101,16 +101,16 @@ int make_socket_non_blocking(int sockfd)
 int TCPAcceptor_listen(void *self)
 {
     TCPAcceptor *tcp_acceptor = self;
-    tcp_acceptor->sockfd = create_and_bind(tcp_acceptor->port);
+    tcp_acceptor->listenfd = create_and_bind(tcp_acceptor->port);
 
-    make_socket_non_blocking(tcp_acceptor->sockfd);
+    make_socket_non_blocking(tcp_acceptor->listenfd);
 
-    listen(tcp_acceptor->sockfd, LISTENQ);
+    listen(tcp_acceptor->listenfd, LISTENQ);
 
     return 0;
 }
 
-void TCPAcceptor_epoll_loop(void *self, void (*cb1)(void), void (*cb2)(void))
+void TCPAcceptor_epoll_loop(void *self, void (*welcome)(void*), void (*handle)(void*))
 {
     TCPAcceptor *tcp_acceptor = self;
     int     efd, s;
@@ -123,20 +123,21 @@ void TCPAcceptor_epoll_loop(void *self, void (*cb1)(void), void (*cb2)(void))
         exit(EXIT_FAILURE);
     }
 
-    event.data.fd = tcp_acceptor->sockfd;
+    event.data.fd = tcp_acceptor->listenfd;
     event.events = EPOLLIN | EPOLLET;
-    s = epoll_ctl(efd, EPOLL_CTL_ADD, tcp_acceptor->sockfd, &event);
+    s = epoll_ctl(efd, EPOLL_CTL_ADD, tcp_acceptor->listenfd, &event);
     if (s == -1) {
         perror("epoll_ctl");
         exit(EXIT_FAILURE);
     }
 
-    events = calloc(10000, sizeof(event));
+    events = calloc(MAX_CONN_NUM, sizeof(event));
 
     while(1) {
         int n, i;
 
-        n = epoll_wait(efd, events, 10000, -1);
+        n = epoll_wait(efd, events, MAX_CONN_NUM, -1);
+        log_info("n=%d", n);
         for (i = 0; i < n; i++) {
 
             if ((events[i].events & EPOLLERR) ||
@@ -150,7 +151,7 @@ void TCPAcceptor_epoll_loop(void *self, void (*cb1)(void), void (*cb2)(void))
                 close (events[i].data.fd);
                 continue;
             }
-            else if (tcp_acceptor->sockfd == events[i].data.fd)
+            else if (tcp_acceptor->listenfd == events[i].data.fd)
             {
                 /* We have a notification on the listening socket, which
                  * means one or more incoming connections */
@@ -162,7 +163,7 @@ void TCPAcceptor_epoll_loop(void *self, void (*cb1)(void), void (*cb2)(void))
                     char hbuf[1024], sbuf[20];
 
                     in_len = sizeof in_addr;
-                    infd = accept(tcp_acceptor->sockfd, &in_addr, &in_len);
+                    infd = accept(tcp_acceptor->listenfd, &in_addr, &in_len);
                     if (infd == -1) {
                         if ((errno == EAGAIN) ||
                             (errno == EWOULDBLOCK))
@@ -202,29 +203,15 @@ void TCPAcceptor_epoll_loop(void *self, void (*cb1)(void), void (*cb2)(void))
                         exit(EXIT_FAILURE);
                     }
 
-                    /* handle new client */
-                    log_info("new client!!");
-                    cb1();
+                    /* welcome new client */
+                    welcome(tcp_acceptor);
                 }
                 continue;
             } // end of accept routine
             else {
 
-                cb2();
-//                 int c = 0;
-// 
-//                 for (c = 0; c < CLIENT_MAX_NUM; c++) {
-//                     client = clients_get(c);
-//                     client_socket = client->socket;
-// 
-//                     if (events[i].data.fd == client_socket) {
-//                         //log_info("client_id=%d, client_socket=%d", c, client_socket);
-// 
-//                         /* callback */
-// 
-//                         break;
-//                     }
-//                 }
+                /* this callback deal with all the connected clients */
+                handle(tcp_acceptor);
             }
         }
     }
@@ -233,7 +220,7 @@ void TCPAcceptor_epoll_loop(void *self, void (*cb1)(void), void (*cb2)(void))
 void TCPAcceptor_close(void *self)
 {
     TCPAcceptor *tcp_acceptor = self;
-    int rc = close(tcp_acceptor->sockfd);
+    int rc = close(tcp_acceptor->listenfd);
     if (rc != 0) {
         perror("[ERROR] close fail");
     }
@@ -242,12 +229,13 @@ void TCPAcceptor_close(void *self)
 
 void * TCPAcceptor_init(void *self)
 {
-    TCPAcceptor *tcp_acceptor = self;
-    tcp_acceptor->sockfd = 0;
-    tcp_acceptor->port = "7777";
-    tcp_acceptor->listen = TCPAcceptor_listen;
-    tcp_acceptor->epoll_loop = TCPAcceptor_epoll_loop;
-    tcp_acceptor->close = TCPAcceptor_close;
+    TCPAcceptor *tcp_acceptor   = self;
+    tcp_acceptor->listenfd      = 0;
+    //tcp_acceptor->connfd        = 0;
+    tcp_acceptor->port          = "7777";
+    tcp_acceptor->listen        = TCPAcceptor_listen;
+    tcp_acceptor->epoll_loop    = TCPAcceptor_epoll_loop;
+    tcp_acceptor->close         = TCPAcceptor_close;
 
     return tcp_acceptor;
 }

@@ -5,6 +5,8 @@
 #include "unp.h"
 #include "object.h"
 
+#define MAX_CONN_NUM    500000
+
 typedef enum STATE {
     INITIAL, CONNECTING, FINISH
 } state;
@@ -12,13 +14,14 @@ typedef enum STATE {
 typedef struct TCPAcceptor {
     Object proto;
     int     state;
-    int     sockfd;
+    int     listenfd;
+    // clients -> infd
     char    *ip;
     char    *port;
 
     /* functions */
     int (*listen)(void *self);
-    void (*epoll_loop)(void *self, void (*cb1)(void), void (*cb2)(void));
+    void (*epoll_loop)(void *self, void (*cb1)(void*), void (*cb2)(void*));
     void (*close)(void *self);
 } TCPAcceptor;
 
