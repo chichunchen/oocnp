@@ -1,5 +1,7 @@
 #include "tcp_acceptor.h"
 
+static DArray *clients = NULL;
+
 /* private */
 
 int Accept(int fd, struct sockaddr *sa, socklen_t *salenptr)
@@ -112,6 +114,7 @@ int TCPAcceptor_listen(void *self)
 
 void TCPAcceptor_epoll_loop(void *self, void (*welcome)(TCPStream*), void (*handle)(TCPStream*))
 {
+	clients = DArray_create(sizeof(TCPStream), 200);
     TCPAcceptor *tcp_acceptor = self;
     TCPStream *tcp_stream;
     tcp_stream = malloc(sizeof(TCPStream));
@@ -199,6 +202,7 @@ void TCPAcceptor_epoll_loop(void *self, void (*welcome)(TCPStream*), void (*hand
 
                     /* welcome new client */
 					// add to client pool
+					DArray_push(clients, tcp_stream);
                     welcome(tcp_stream);
                 }
                 continue;
@@ -206,7 +210,14 @@ void TCPAcceptor_epoll_loop(void *self, void (*welcome)(TCPStream*), void (*hand
             else {
 
                 /* this callback deal with all the connected clients */
-                handle(tcp_stream);
+				int i = 0;
+				for(i = 0; i < 200; i++) {
+					TCPStream* stream = DArray_get(clients, i);
+					if (event.data.fd == stream->sockfd) {
+                		handle(tcp_stream);
+					}
+					break;
+				}
             }
         }
     }

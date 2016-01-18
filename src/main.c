@@ -1,4 +1,3 @@
-#include <unistd.h>
 #include "tcp_stream.h"
 #include "tcp_acceptor.h"
 
@@ -10,7 +9,10 @@ void welcome(TCPStream *tcp_stream)
 
 void handle(TCPStream *tcp_stream)
 {
-    log_info("handle");
+	char buf[100];
+	memset(buf, 0, 100);
+	sprintf(buf, "hi %d\n", tcp_stream->sockfd);
+	tcp_stream->send(tcp_stream, buf, 100);
 }
 
 int main(int argc, const char *argv[])
