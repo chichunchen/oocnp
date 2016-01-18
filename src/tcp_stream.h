@@ -15,7 +15,7 @@ typedef struct TCPStream {
 
     /* functions */
     void (*send)(void *self, char *buffer, size_t len);
-    void (*receive)(int fd, char *buffer, size_t len);
+    ssize_t (*receive)(void *self, char *buffer, size_t len);
 } TCPStream;
 
 void * TCPStream_init(void *self, int sd, struct sockaddr address);

@@ -4,12 +4,19 @@ static DArray *clients = NULL;
 
 /* private */
 
-int Accept(int fd, struct sockaddr *sa, socklen_t *salenptr)
+/* Handle connection abort before accept returns */
+static int Accept(int fd, struct sockaddr *sa, socklen_t *salenptr)
 {
     int     n;
 
 again:
     if ( (n = accept(fd, sa, salenptr)) < 0) {
+		if ((errno == EAGAIN) ||
+			(errno == EWOULDBLOCK)) 
+		{
+			/* We have procestreamed all incoming connections */
+			return -1;
+		}
 #ifdef  EPROTO
         if (errno == EPROTO || errno == ECONNABORTED)
 #else
@@ -18,13 +25,13 @@ again:
             goto again;
         else {
             perror("[ERROR] Server - accept error");
-            exit(0);
+			return -1;
         }
     }
     return(n);
 }
 
-void SetReuseSock(int listenfd)
+static void SetReuseSock(int listenfd)
 {
     int optval = 1;
     if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(int)) == -1) {
@@ -32,7 +39,7 @@ void SetReuseSock(int listenfd)
     }
 }
 
-int create_and_bind(char *port)
+static int create_and_bind(char *port)
 {
     struct addrinfo hints;
     struct addrinfo *result, *rp;
@@ -79,7 +86,7 @@ int create_and_bind(char *port)
     return sfd;
 }
 
-int make_socket_non_blocking(int listenfd)
+static int make_socket_non_blocking(int listenfd)
 {
     int flags, s;
 
@@ -114,7 +121,7 @@ int TCPAcceptor_listen(void *self)
 
 void TCPAcceptor_epoll_loop(void *self, void (*welcome)(TCPStream*), void (*handle)(TCPStream*))
 {
-	clients = DArray_create(sizeof(TCPStream), 200);
+	clients = DArray_create(sizeof(TCPStream), INIT_CLIENT_SIZE);
     TCPAcceptor *tcp_acceptor = self;
     TCPStream *tcp_stream;
     tcp_stream = malloc(sizeof(TCPStream));
@@ -167,20 +174,10 @@ void TCPAcceptor_epoll_loop(void *self, void (*welcome)(TCPStream*), void (*hand
                     int infd;
 
                     in_len = sizeof in_addr;
-                    infd = accept(tcp_acceptor->listenfd, &in_addr, &in_len);
-                    if (infd == -1) {
-                        if ((errno == EAGAIN) ||
-                            (errno == EWOULDBLOCK))
-                        {
-                            /* We have procestreamed all incoming connections */
-                            break;
-                        }
-                        else
-                        {
-                            perror("accept");
-                            break;
-                        }
-                    }
+                    infd = Accept(tcp_acceptor->listenfd, &in_addr, &in_len);
+					if (infd == -1) {
+						break;
+					}
 
                     TCPStream_init(tcp_stream, infd, in_addr);
 
@@ -211,7 +208,7 @@ void TCPAcceptor_epoll_loop(void *self, void (*welcome)(TCPStream*), void (*hand
 
                 /* this callback deal with all the connected clients */
 				int i = 0;
-				for(i = 0; i < 200; i++) {
+				for(i = 0; i < DArray_max(clients); i++) {
 					TCPStream* stream = DArray_get(clients, i);
 					if (event.data.fd == stream->sockfd) {
                 		handle(tcp_stream);

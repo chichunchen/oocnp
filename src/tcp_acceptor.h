@@ -8,6 +8,7 @@
 #include "tcp_stream.h"
 
 #define MAX_CONN_NUM    500000
+#define INIT_CLIENT_SIZE 1000
 
 typedef enum STATE {
     INITIAL, CONNECTING, FINISH

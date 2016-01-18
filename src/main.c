@@ -13,6 +13,16 @@ void handle(TCPStream *tcp_stream)
 	memset(buf, 0, 100);
 	sprintf(buf, "hi %d\n", tcp_stream->sockfd);
 	tcp_stream->send(tcp_stream, buf, 100);
+
+	if (tcp_stream->receive(tcp_stream, buf, 100) > 0) {
+		fprintf(stderr, "%s\n", buf);
+		if (strncmp(buf, "bye", 3) == 0) {
+			strcpy(buf, "see you\n");
+			tcp_stream->send(tcp_stream, buf, 100);
+			close(tcp_stream->sockfd);
+			tcp_stream->sockfd = 0;
+		}
+	}
 }
 
 int main(int argc, const char *argv[])

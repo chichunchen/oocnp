@@ -3,8 +3,7 @@
 
 /* private */
 
-ssize_t                     /* Write "n" bytes to a descriptor. */
-writen(int fd, const void *vptr, size_t n)
+static ssize_t writen(int fd, const void *vptr, size_t n)
 {
     size_t      nleft;
     ssize_t     nwritten;
@@ -26,27 +25,28 @@ writen(int fd, const void *vptr, size_t n)
     return(n);
 }
 
-ssize_t                     /* Readn "n" bytes from a descriptor. */
-readn(int fd, void *vptr, size_t n)
+static ssize_t readline(int fd, void *vptr, size_t maxlen)
 {
-    size_t      nleft;
-    ssize_t     nread;
-    char  *ptr;
+	ssize_t	n, rc;
+	char	c, *ptr;
 
-    ptr = vptr;
-    nleft = n;
-    while (nleft > 0) {
-        if ( (nread = read(fd, ptr, nleft)) <= 0) {
-            if (nread < 0 && errno == EINTR)
-                nread = 0;       /* and call read() again */
-            else
-                return(-1);         /* error */
-        }
+	ptr = vptr;
+	for (n = 1; n < maxlen; n++) {
+		if ( (rc = read(fd, &c, 1)) == 1) {
+			*ptr++ = c;
+			if (c == '\n')
+				break;
+		} else if (rc == 0) {
+			if (n == 1)
+				return(0);	/* EOF, no data read */
+			else
+				break;		/* EOF, some data was read */
+		} else
+			return(-1);	/* error */
+	}
 
-        nleft -= nread;
-        ptr   += nread;
-    }
-    return(n);
+	*ptr = 0;
+	return(n);
 }
 
 /* public */
@@ -58,16 +58,23 @@ void TCPStream_send(void * self, char *buffer, size_t len)
         log_err("writen error");
 }
 
-void TCPStream_receive(int fd, char *buffer, size_t len)
+ssize_t TCPStream_receive(void *self, char *buffer, size_t len)
 {
-    if (readn(fd, buffer, len) != len)
-        log_err("readn error");
+    TCPStream *tcp_stream   = self;
+	ssize_t  	n;
+	int fd    = tcp_stream->sockfd;
+
+	if ((n = readline(fd, buffer, len)) == -1)
+		log_err("receive error");
+
+	return (n);
 }
 
 void * TCPStream_init(void *self, int sd, struct sockaddr address)
 {
     TCPStream *tcp_stream   = self;
     tcp_stream->sockfd = sd;
+	/* connect function proto */
     tcp_stream->send = TCPStream_send;
     tcp_stream->receive = TCPStream_receive;
 
