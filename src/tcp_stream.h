@@ -14,8 +14,8 @@ typedef struct TCPStream {
     char peerPort[PORT_LEN];
 
     /* functions */
-    ssize_t (*send)(char *buffer, size_t len);
-    ssize_t (*receive)(char *buffer, size_t len);
+    void (*send)(void *self, char *buffer, size_t len);
+    void (*receive)(int fd, char *buffer, size_t len);
 } TCPStream;
 
 void * TCPStream_init(void *self, int sd, struct sockaddr address);

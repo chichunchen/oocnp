@@ -177,7 +177,9 @@ void TCPAcceptor_epoll_loop(void *self, void (*welcome)(void*), void (*handle)(v
                         }
                     }
 
+                    tcp_stream = malloc(sizeof(TCPStream));
                     TCPStream_init(tcp_stream, infd, in_addr);
+                    log_info("sockfd=%d ip=%s", tcp_stream->sockfd, tcp_stream->peerIP);
 
                     /* Make the incoming socket non-blocking and add it to
                      * list of fds to monitor. */
@@ -196,6 +198,8 @@ void TCPAcceptor_epoll_loop(void *self, void (*welcome)(void*), void (*handle)(v
                     }
 
                     /* welcome new client */
+                    char buf[10] = "hihihi";
+                    tcp_stream->send(tcp_stream, buf, 10);
                     welcome(tcp_acceptor);
                 }
                 continue;

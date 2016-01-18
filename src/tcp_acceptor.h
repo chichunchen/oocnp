@@ -21,8 +21,8 @@ typedef struct TCPAcceptor {
     char    *port;
 
     /* functions */
-    int (*listen)(void *self);
-    void (*epoll_loop)(void *self, void (*cb1)(void*), void (*cb2)(void*));
+    int  (*listen)(void *self);
+    void (*epoll_loop)(void *self, void (*welcome)(void*), void (*handle)(void*));
     void (*close)(void *self);
 } TCPAcceptor;
 
