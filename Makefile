@@ -4,9 +4,11 @@ CC       = gcc
 # compiling flags here
 CFLAGS   = -g -Wall -I.
 
-LINKER   = gcc -pthread -lds -o
+LINKER   = gcc -pthread -o
 # linking flags here
 LFLAGS   = -Wall -I. -lm
+
+LIBRARIES = -lds
 
 # change these to set the proper directories where each files shoould be
 SRCDIR   = src
@@ -21,7 +23,7 @@ rm       = rm -f
 
 $(BINDIR)/$(TARGET): $(OBJECTS)
 	ctags $(SOURCES) $(INCLUDES)
-	@$(LINKER) $@ $(LFLAGS) $(OBJECTS)
+	@$(LINKER) $@ $(LFLAGS) $(OBJECTS) $(LIBRARIES)
 	@echo "Linking complete!"
 
 $(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.c

@@ -59,7 +59,7 @@ int create_and_bind(char *port)
         if (s == 0)
         {
             /* We managed to bind
-             * successfully! */
+             * succestreamfully! */
             break;
         }
 
@@ -115,8 +115,6 @@ void TCPAcceptor_epoll_loop(void *self, void (*welcome)(TCPStream*), void (*hand
     TCPAcceptor *tcp_acceptor = self;
     TCPStream *tcp_stream;
     tcp_stream = malloc(sizeof(TCPStream));
-    List *list = NULL;
-    //List_create();
 
     int     efd, s;
     struct epoll_event event;
@@ -171,7 +169,7 @@ void TCPAcceptor_epoll_loop(void *self, void (*welcome)(TCPStream*), void (*hand
                         if ((errno == EAGAIN) ||
                             (errno == EWOULDBLOCK))
                         {
-                            /* We have processed all incoming connections */
+                            /* We have procestreamed all incoming connections */
                             break;
                         }
                         else
@@ -200,7 +198,7 @@ void TCPAcceptor_epoll_loop(void *self, void (*welcome)(TCPStream*), void (*hand
                     }
 
                     /* welcome new client */
-                    //List_push(list, tcp_stream);
+					// add to client pool
                     welcome(tcp_stream);
                 }
                 continue;

@@ -4,8 +4,8 @@
 
 void welcome(TCPStream *tcp_stream)
 {
-    char buf[10] = "hihihi";
-    tcp_stream->send(tcp_stream, buf, 10);
+    char buf[100] = "~~~ welcome to epoll loop ~~~\n";
+    tcp_stream->send(tcp_stream, buf, 100);
 }
 
 void handle(TCPStream *tcp_stream)
