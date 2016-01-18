@@ -12,6 +12,7 @@ ssize_t TCPStream_receive(char *buffer, size_t len)
 void * TCPStream_init(void *self, int sd, struct sockaddr address)
 {
     TCPStream *tcp_stream   = self;
+    tcp_stream = malloc(sizeof(TCPStream));
     tcp_stream->sockfd = sd;
     tcp_stream->send = TCPStream_send;
     tcp_stream->receive = TCPStream_receive;

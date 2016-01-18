@@ -159,7 +159,6 @@ void TCPAcceptor_epoll_loop(void *self, void (*welcome)(void*), void (*handle)(v
                     struct sockaddr in_addr;
                     socklen_t in_len;
                     int infd;
-                    char hbuf[102]; //bug disappear
                     TCPStream *tcp_stream;
 
                     in_len = sizeof in_addr;
