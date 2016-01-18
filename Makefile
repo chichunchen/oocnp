@@ -4,7 +4,7 @@ CC       = gcc
 # compiling flags here
 CFLAGS   = -g -Wall -I.
 
-LINKER   = gcc -pthread -o
+LINKER   = gcc -pthread -lds -o
 # linking flags here
 LFLAGS   = -Wall -I. -lm
 

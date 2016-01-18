@@ -1,14 +1,14 @@
 #include <unistd.h>
+#include "tcp_stream.h"
 #include "tcp_acceptor.h"
 
-void welcome(void *tcp_acceptor)
+void welcome(TCPStream *tcp_stream)
 {
-    ssize_t n;
-    char buf[100];
-    //n = write(tcp_acceptor->listenfd, );
+    char buf[10] = "hihihi";
+    tcp_stream->send(tcp_stream, buf, 10);
 }
 
-void handle(void * tcp_acceptor)
+void handle(TCPStream *tcp_stream)
 {
     log_info("handle");
 }

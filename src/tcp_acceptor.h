@@ -2,6 +2,7 @@
 #define __TCPACCEPTOR_H
 
 #include <string.h>
+#include <ds.h>
 #include "unp.h"
 #include "object.h"
 #include "tcp_stream.h"
@@ -22,7 +23,7 @@ typedef struct TCPAcceptor {
 
     /* functions */
     int  (*listen)(void *self);
-    void (*epoll_loop)(void *self, void (*welcome)(void*), void (*handle)(void*));
+    void (*epoll_loop)(void *self, void (*welcome)(TCPStream*), void (*handle)(TCPStream*));
     void (*close)(void *self);
 } TCPAcceptor;
 
